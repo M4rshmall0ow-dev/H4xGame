@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Economy Bot | Production Console</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        slate: { 850: '#151e2e', 900: '#0f172a', 950: '#0b1120' },
+                        primary: { 400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0b1120; color: #f8fafc; }
+        .glass-panel { background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.05); }
+        .sidebar-item { transition: all 0.2s; border-left: 3px solid transparent; }
+        .sidebar-item:hover { background-color: rgba(255,255,255,0.03); border-left-color: rgba(255,255,255,0.2); }
+        .sidebar-item.active { background-color: rgba(59, 130, 246, 0.1); color: #60a5fa; border-left-color: #3b82f6; }
+        
+        /* Modern Scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        
+        .modal-enter { animation: modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden text-sm">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col z-20 shadow-2xl flex-shrink-0">
+        <div class="h-16 flex items-center px-6 border-b border-slate-800">
+            <div class="w-8 h-8 rounded bg-gradient-to-br from-primary-500 to-indigo-600 flex items-center justify-center text-white font-bold mr-3 shadow-lg shadow-primary-500/30">
+                <i class="fa-solid fa-cube"></i>
+            </div>
+            <span class="font-bold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">EcoBot Admin</span>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto py-4">
+            <div class="px-4 mb-2"><p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Platform</p></div>
+            <a href="#" onclick="app.switchTab('overview', 'Platform / Overview')" id="nav-overview" class="sidebar-item active flex items-center px-6 py-2.5 text-slate-300">
+                <i class="fa-solid fa-chart-line w-6 text-slate-400"></i> Overview
+            </a>
+            <a href="#" onclick="app.switchTab('players', 'Platform / Player Manager')" id="nav-players" class="sidebar-item flex items-center px-6 py-2.5 text-slate-300">
+                <i class="fa-solid fa-users w-6 text-slate-400"></i> Player Manager
+            </a>
+
+            <div class="px-4 mt-6 mb-2"><p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Game Data</p></div>
+            <a href="#" onclick="app.switchTab('shop', 'Game Data / Shop Builder')" id="nav-shop" class="sidebar-item flex items-center px-6 py-2.5 text-slate-300">
+                <i class="fa-solid fa-store w-6 text-slate-400"></i> Shop Editor
+            </a>
+            <a href="#" onclick="app.switchTab('ores', 'Game Data / Ore Config')" id="nav-ores" class="sidebar-item flex items-center px-6 py-2.5 text-slate-300">
+                <i class="fa-solid fa-gem w-6 text-slate-400"></i> Ore & Mining
+            </a>
+            
+            <div class="px-4 mt-6 mb-2"><p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">System</p></div>
+            <a href="#" onclick="app.switchTab('audit', 'System / Audit Logs')" id="nav-audit" class="sidebar-item flex items-center px-6 py-2.5 text-slate-300">
+                <i class="fa-solid fa-clipboard-list w-6 text-slate-400"></i> Audit Logs
+            </a>
+        </div>
+        
+        <div class="p-4 border-t border-slate-800 flex items-center gap-3">
+            <img src="https://ui-avatars.com/api/?name=Admin&background=2563eb&color=fff" class="w-9 h-9 rounded-full ring-2 ring-slate-800" alt="Admin">
+            <div class="flex-1 overflow-hidden">
+                <p class="text-sm font-medium text-white truncate">System Admin</p>
+                <p class="text-xs text-slate-500 truncate">Root Access</p>
+            </div>
+            <a href="/api/logout" class="text-slate-400 hover:text-red-400 transition" title="Log Out"><i class="fa-solid fa-power-off"></i></a>
+        </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 flex flex-col bg-[#0b1120] relative">
+        <!-- Header -->
+        <header class="h-16 glass-panel border-b border-slate-800 flex items-center justify-between px-6 z-10">
+            <div class="flex items-center text-slate-400 font-medium">
+                <span id="breadcrumb">Platform / Overview</span>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <div class="relative hidden md:block">
+                    <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+                    <input type="text" placeholder="Global search..." class="bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-md pl-9 pr-4 py-1.5 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 w-64 transition-all">
+                </div>
+                <div class="h-6 w-px bg-slate-700"></div>
+                <div id="ws-indicator" class="flex items-center gap-2 px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 font-medium text-xs">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span id="ws-text">Live Sync</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dynamic Viewport -->
+        <div class="flex-1 overflow-y-auto p-6" id="app-viewport">
+            
+            <!-- Tab: Overview -->
+            <div id="tab-overview" class="block space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                    <div class="bg-slate-850 border border-slate-800 rounded-xl p-5 shadow-sm">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-slate-400 font-medium text-xs uppercase tracking-wider mb-1">Total Players</p>
+                                <h3 class="text-3xl font-bold text-white" id="stat-users">-</h3>
+                            </div>
+                            <div class="p-2.5 bg-blue-500/10 rounded-lg text-blue-400"><i class="fa-solid fa-users text-lg"></i></div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-850 border border-slate-800 rounded-xl p-5 shadow-sm">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-slate-400 font-medium text-xs uppercase tracking-wider mb-1">Economy Vault</p>
+                                <h3 class="text-3xl font-bold text-emerald-400" id="stat-coins">-</h3>
+                            </div>
+                            <div class="p-2.5 bg-emerald-500/10 rounded-lg text-emerald-400"><i class="fa-solid fa-coins text-lg"></i></div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-850 border border-slate-800 rounded-xl p-5 shadow-sm">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-slate-400 font-medium text-xs uppercase tracking-wider mb-1">Total Mined</p>
+                                <h3 class="text-3xl font-bold text-purple-400" id="stat-ores">-</h3>
+                            </div>
+                            <div class="p-2.5 bg-purple-500/10 rounded-lg text-purple-400"><i class="fa-solid fa-pickaxe text-lg"></i></div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-850 border border-slate-800 rounded-xl p-5 shadow-sm">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-slate-400 font-medium text-xs uppercase tracking-wider mb-1">Active Areas</p>
+                                <h3 class="text-3xl font-bold text-orange-400" id="stat-areas">-</h3>
+                            </div>
+                            <div class="p-2.5 bg-orange-500/10 rounded-lg text-orange-400"><i class="fa-solid fa-mountain-sun text-lg"></i></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-850 border border-slate-800 rounded-xl shadow-sm flex flex-col h-80">
+                    <div class="px-5 py-4 border-b border-slate-800 flex justify-between items-center">
+                        <h3 class="font-semibold text-white">Live System Events</h3>
+                        <div class="flex space-x-2">
+                            <span class="flex h-2.5 w-2.5 relative">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary-500"></span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-4 space-y-3" id="live-feed">
+                        <div class="flex gap-3 text-sm text-slate-400">
+                            <div class="text-slate-600 font-mono text-xs mt-0.5">Now</div>
+                            <div>System initialized and listening for WebSocket broadcasts.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Generic Container for Players, Shop, Ores, Audit -->
+            <div id="tab-players" class="hidden h-full flex flex-col"></div>
+            <div id="tab-shop" class="hidden h-full flex flex-col"></div>
+            <div id="tab-ores" class="hidden h-full flex flex-col"></div>
+            <div id="tab-audit" class="hidden h-full flex flex-col"></div>
+
+        </div>
+    </main>
+
+    <!-- Generic Modal Container for Form Builder -->
+    <div id="generic-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden modal-enter flex flex-col max-h-[90vh]">
+            <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center bg-slate-850/50">
+                <h3 class="font-bold text-lg text-white" id="modal-title">Create Record</h3>
+                <button onclick="app.closeModal()" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto" id="modal-body">
+                <!-- Form Builder Injects Here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 pointer-events-none"></div>
+
+    <script>
+        const isLocalFile = window.location.protocol === 'file:';
+        // Connects to your BotHosting server if opened locally, otherwise uses relative path
+        const API_BASE = isLocalFile ? 'http://fi3.bot-hosting.net:26167/api' : '/api';
+        
+        const host = window.location.host || 'fi3.bot-hosting.net:26167';
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const WS_URL = isLocalFile ? 'ws://fi3.bot-hosting.net:26167/api/ws' : `${wsProtocol}//${host}/api/ws`;
+
+        // --- Core Application Logic ---
+        const app = {
+            activeTab: 'overview',
+            
+            init() {
+                this.fetchDashboardStats();
+                this.connectWebSocket();
+                
+                // Initialize DataGrids
+                this.grids = {
+                    players: new DataGrid('tab-players', 'Players', '/users', [
+                        { key: 'id', label: 'Discord ID', type: 'mono' },
+                        { key: 'coins', label: 'Balance', type: 'currency' },
+                        { key: 'level', label: 'Level', type: 'badge' },
+                        { key: 'prestige', label: 'Prestige', type: 'number' },
+                        { key: 'total_mined', label: 'Total Mined', type: 'number' }
+                    ], null, false), // readonly for now
+                    
+                    shop: new DataGrid('tab-shop', 'Shop Items', '/shop', [
+                        { key: 'emoji', label: 'Icon', type: 'text' },
+                        { key: 'name', label: 'Item Name', type: 'bold' },
+                        { key: 'price', label: 'Price', type: 'currency' },
+                        { key: 'income', label: 'Income/10m', type: 'currency' },
+                        { key: 'description', label: 'Description', type: 'text' }
+                    ], [
+                        { name: 'emoji', label: 'Emoji Icon', type: 'text', placeholder: '👷', required: true, width: 'half' },
+                        { name: 'name', label: 'Item Name', type: 'text', placeholder: 'Expert Miner', required: true, width: 'half' },
+                        { name: 'desc', label: 'Description', type: 'text', placeholder: 'Provides passive income.', required: true, width: 'full' },
+                        { name: 'price', label: 'Purchase Price ($)', type: 'number', min: 0, required: true, width: 'half' },
+                        { name: 'income', label: 'Passive Income ($)', type: 'number', min: 0, required: true, width: 'half' }
+                    ]),
+                    
+                    ores: new DataGrid('tab-ores', 'Mineable Ores', '/ores', [
+                        { key: 'emoji', label: 'Icon', type: 'text' },
+                        { key: 'name', label: 'Ore Name', type: 'bold' },
+                        { key: 'sell_value', label: 'Value', type: 'currency' },
+                        { key: 'rarity', label: 'Rarity Weight', type: 'badge' },
+                        { key: 'req_level', label: 'Req. Level', type: 'number' },
+                        { key: 'req_area', label: 'Area ID', type: 'mono' }
+                    ], [
+                        { name: 'emoji', label: 'Emoji Icon', type: 'text', placeholder: '💎', required: true, width: 'third' },
+                        { name: 'name', label: 'Ore Name', type: 'text', placeholder: 'Diamond', required: true, width: 'twothirds' },
+                        { name: 'sell_value', label: 'Sell Value ($)', type: 'number', min: 1, required: true, width: 'half' },
+                        { name: 'rarity', label: 'Rarity Weight (Higher=Common)', type: 'number', step: '0.1', required: true, width: 'half' },
+                        { name: 'req_level', label: 'Required Mining Level', type: 'number', min: 1, required: true, width: 'half' },
+                        { name: 'req_area', label: 'Required Area ID', type: 'number', min: 1, required: true, width: 'half' }
+                    ]),
+
+                    audit: new DataGrid('tab-audit', 'Audit Logs', '/audit', [
+                        { key: 'timestamp', label: 'Timestamp', type: 'mono' },
+                        { key: 'admin', label: 'Admin', type: 'text' },
+                        { key: 'action', label: 'Action', type: 'badge' },
+                        { key: 'target', label: 'Table', type: 'text' },
+                        { key: 'details', label: 'Details', type: 'text' }
+                    ], null, false)
+                };
+            },
+
+            switchTab(tabId, breadcrumbText) {
+                // UI Updates
+                document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+                document.getElementById(`nav-${tabId}`).classList.add('active');
+                
+                document.querySelectorAll('#app-viewport > div').forEach(el => el.classList.add('hidden', 'flex-col'));
+                const target = document.getElementById(`tab-${tabId}`);
+                target.classList.remove('hidden');
+                if(tabId !== 'overview') target.classList.add('flex'); // Enable flex layout for grids
+                
+                document.getElementById('breadcrumb').innerText = breadcrumbText;
+                
+                // Load data for the selected grid
+                if (this.grids[tabId]) this.grids[tabId].loadData();
+                if (tabId === 'overview') this.fetchDashboardStats();
+            },
+
+            toast(msg, type = 'success') {
+                const colors = {
+                    'success': 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
+                    'error': 'bg-red-500/10 border-red-500/20 text-red-400',
+                    'info': 'bg-blue-500/10 border-blue-500/20 text-blue-400'
+                };
+                const icons = { 'success': 'fa-check', 'error': 'fa-triangle-exclamation', 'info': 'fa-info' };
+                
+                const el = document.createElement('div');
+                el.className = `flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg backdrop-blur-md transition-all duration-300 translate-y-10 opacity-0 ${colors[type]}`;
+                el.innerHTML = `<div class="p-1 rounded-full bg-current/10"><i class="fa-solid ${icons[type]} text-current text-xs"></i></div><span class="font-medium">${msg}</span>`;
+                
+                const container = document.getElementById('toast-container');
+                container.appendChild(el);
+                
+                requestAnimationFrame(() => el.classList.remove('translate-y-10', 'opacity-0'));
+                setTimeout(() => {
+                    el.classList.add('translate-y-10', 'opacity-0');
+                    setTimeout(() => el.remove(), 300);
+                }, 4000);
+            },
+
+            openModal(title, contentHTML) {
+                document.getElementById('modal-title').innerText = title;
+                document.getElementById('modal-body').innerHTML = contentHTML;
+                document.getElementById('generic-modal').classList.remove('hidden');
+            },
+
+            closeModal() {
+                document.getElementById('generic-modal').classList.add('hidden');
+            },
+
+            async fetchDashboardStats() {
+                try {
+                    const res = await fetch(`${API_BASE}/stats`);
+                    const data = await res.json();
+                    document.getElementById('stat-users').innerText = data.total_users.toLocaleString();
+                    document.getElementById('stat-coins').innerText = '$' + data.total_coins.toLocaleString();
+                    document.getElementById('stat-ores').innerText = data.total_ores.toLocaleString();
+                    document.getElementById('stat-areas').innerText = data.active_areas;
+                } catch (e) { console.warn("Failed to load overview stats."); }
+            },
+
+            connectWebSocket() {
+                const ws = new WebSocket(WS_URL);
+                const ind = document.getElementById('ws-indicator');
+                const txt = document.getElementById('ws-text');
+                
+                ws.onopen = () => {
+                    txt.innerText = "Live Sync";
+                    ind.className = "flex items-center gap-2 px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 font-medium text-xs";
+                    ind.children[0].classList.add('animate-pulse');
+                };
+                
+                ws.onmessage = (event) => {
+                    const msg = JSON.parse(event.data);
+                    
+                    // Dashboard Feed
+                    if (msg.event === 'mining_event') {
+                        const feed = document.getElementById('live-feed');
+                        const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+                        feed.insertAdjacentHTML('afterbegin', `
+                            <div class="flex gap-3 text-sm items-start modal-enter">
+                                <div class="text-slate-500 font-mono text-xs mt-0.5 whitespace-nowrap">${time}</div>
+                                <div class="flex-1">
+                                    <span class="text-white font-medium">${msg.data.user_name}</span> mined 
+                                    <span class="text-primary-400 font-bold">${msg.data.ores_mined}</span> ores in ${msg.data.area}.
+                                    <div class="text-xs text-slate-500 mt-0.5 truncate">${msg.data.summary}</div>
+                                </div>
+                            </div>
+                        `);
+                        if(feed.children.length > 20) feed.removeChild(feed.lastChild);
+                        
+                        // Update fast stat
+                        const oresEl = document.getElementById('stat-ores');
+                        oresEl.innerText = (parseInt(oresEl.innerText.replace(/,/g, '')) + msg.data.ores_mined).toLocaleString();
+                    }
+                    
+                    // Table auto-reloads on edits
+                    if (['shop_update', 'ore_update'].includes(msg.event)) {
+                        app.toast(`Remote ${msg.event.split('_')[0]} change detected.`, 'info');
+                        if (msg.event === 'shop_update' && !document.getElementById('tab-shop').classList.contains('hidden')) app.grids.shop.loadData();
+                        if (msg.event === 'ore_update' && !document.getElementById('tab-ores').classList.contains('hidden')) app.grids.ores.loadData();
+                    }
+                };
+                
+                ws.onclose = () => {
+                    txt.innerText = "Reconnecting...";
+                    ind.className = "flex items-center gap-2 px-2.5 py-1 rounded bg-red-500/10 border border-red-500/20 text-red-500 font-medium text-xs";
+                    ind.children[0].classList.remove('animate-pulse');
+                    setTimeout(() => this.connectWebSocket(), 3000);
+                };
+            }
+        };
+
+        // --- Generic DataGrid & FormBuilder Architecture ---
+        class DataGrid {
+            constructor(containerId, title, endpoint, columns, formSchema = null, canCreate = true) {
+                this.containerId = containerId;
+                this.title = title;
+                this.endpoint = endpoint;
+                this.columns = columns;
+                this.formSchema = formSchema;
+                this.canCreate = canCreate && formSchema;
+                this.data = [];
+                this.searchTerm = '';
+                
+                this.buildLayout();
+            }
+
+            buildLayout() {
+                const container = document.getElementById(this.containerId);
+                let createBtnHtml = this.canCreate ? 
+                    `<button onclick="app.grids.${this.containerId.replace('tab-','')}.openCreateModal()" class="px-3 py-1.5 bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium rounded-lg transition shadow-lg shadow-primary-500/20 flex items-center gap-2 pointer-events-auto"><i class="fa-solid fa-plus"></i> New</button>` : '';
+
+                container.innerHTML = `
+                    <div class="bg-slate-850 border border-slate-800 rounded-xl shadow-sm flex flex-col flex-1 overflow-hidden pointer-events-auto">
+                        <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                            <div class="flex items-center gap-4">
+                                <h3 class="font-semibold text-white">${this.title}</h3>
+                                <div class="relative">
+                                    <i class="fa-solid fa-search absolute left-3 top-2 text-slate-500 text-xs"></i>
+                                    <input type="text" placeholder="Filter records..." class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded pl-8 pr-3 py-1.5 focus:border-primary-500 outline-none w-48" oninput="app.grids.${this.containerId.replace('tab-','')}.filter(this.value)">
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="app.grids.${this.containerId.replace('tab-','')}.exportJSON()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium rounded-lg transition flex items-center gap-2 pointer-events-auto"><i class="fa-solid fa-download"></i> Export</button>
+                                ${createBtnHtml}
+                            </div>
+                        </div>
+                        <div class="flex-1 overflow-auto pointer-events-auto relative">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-slate-900/80 sticky top-0 backdrop-blur-sm z-10">
+                                    <tr>
+                                        ${this.columns.map(c => `<th class="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-800">${c.label}</th>`).join('')}
+                                        ${this.canCreate ? `<th class="px-5 py-3 text-right text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-800">Actions</th>` : ''}
+                                    </tr>
+                                </thead>
+                                <tbody id="${this.containerId}-tbody" class="divide-y divide-slate-800 bg-slate-850">
+                                    <tr><td colspan="100%" class="px-5 py-8 text-center text-slate-500"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Loading data...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            }
+
+            async loadData() {
+                const tbody = document.getElementById(`${this.containerId}-tbody`);
+                try {
+                    const res = await fetch(`${API_BASE}${this.endpoint}`);
+                    this.data = await res.json();
+                    this.renderRows(this.data);
+                } catch (e) {
+                    tbody.innerHTML = `<tr><td colspan="100%" class="px-5 py-8 text-center text-red-400">Failed to fetch data from API.</td></tr>`;
+                }
+            }
+
+            filter(term) {
+                this.searchTerm = term.toLowerCase();
+                const filtered = this.data.filter(item => 
+                    Object.values(item).some(val => String(val).toLowerCase().includes(this.searchTerm))
+                );
+                this.renderRows(filtered);
+            }
+
+            renderRows(dataArray) {
+                const tbody = document.getElementById(`${this.containerId}-tbody`);
+                if(dataArray.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="100%" class="px-5 py-12 text-center text-slate-500">No records found.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = dataArray.map(row => {
+                    let html = `<tr class="hover:bg-slate-800/50 transition group">`;
+                    
+                    this.columns.forEach(col => {
+                        let val = row[col.key] || '-';
+                        let css = "px-5 py-3 text-sm text-slate-300";
+                        
+                        if (col.type === 'currency') val = `<span class="text-emerald-400 font-medium">$${val.toLocaleString()}</span>`;
+                        else if (col.type === 'bold') val = `<span class="text-white font-medium">${val}</span>`;
+                        else if (col.type === 'mono') val = `<span class="font-mono text-xs text-slate-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-700">${val}</span>`;
+                        else if (col.type === 'badge') {
+                            const colors = ['bg-blue-500/10 text-blue-400 border-blue-500/20', 'bg-purple-500/10 text-purple-400 border-purple-500/20', 'bg-orange-500/10 text-orange-400 border-orange-500/20'];
+                            const color = colors[String(val).length % colors.length];
+                            val = `<span class="px-2 py-0.5 rounded text-xs font-medium border ${color}">${val}</span>`;
+                        }
+                        
+                        html += `<td class="${css}">${val}</td>`;
+                    });
+
+                    if (this.canCreate) {
+                        html += `
+                            <td class="px-5 py-3 text-right">
+                                <button onclick="app.grids.${this.containerId.replace('tab-','')}.deleteRecord(${row.id})" class="text-slate-500 hover:text-red-400 transition opacity-0 group-hover:opacity-100 p-1.5 rounded bg-slate-800 hover:bg-red-500/10"><i class="fa-solid fa-trash"></i></button>
+                            </td>
+                        `;
+                    }
+                    return html + `</tr>`;
+                }).join('');
+            }
+
+            exportJSON() {
+                const dataStr = JSON.stringify(this.data, null, 2);
+                const blob = new Blob([dataStr], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `export_${this.title.replace(/\s+/g, '_').toLowerCase()}_${new Date().getTime()}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                app.toast(`Exported ${this.data.length} records.`, 'info');
+            }
+
+            openCreateModal() {
+                let formHtml = `<form id="dynamic-form" class="space-y-4" onsubmit="event.preventDefault(); app.grids.${this.containerId.replace('tab-','')}.submitForm()">`;
+                formHtml += `<div class="grid grid-cols-2 gap-4">`;
+                
+                this.formSchema.forEach(field => {
+                    const spanClass = field.width === 'full' ? 'col-span-2' : (field.width === 'third' ? 'col-span-2 md:col-span-1 lg:col-span-1' : 'col-span-2 sm:col-span-1');
+                    
+                    formHtml += `<div class="${spanClass}">
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">${field.label}</label>
+                        <input type="${field.type}" id="field-${field.name}" 
+                            class="w-full bg-slate-950 border border-slate-700 text-white text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all placeholder-slate-600 shadow-inner"
+                            placeholder="${field.placeholder || ''}"
+                            ${field.required ? 'required' : ''}
+                            ${field.min !== undefined ? `min="${field.min}"` : ''}
+                            ${field.step !== undefined ? `step="${field.step}"` : ''}>
+                    </div>`;
+                });
+                
+                formHtml += `</div>
+                    <div class="pt-5 border-t border-slate-800 flex justify-end gap-3 mt-6">
+                        <button type="button" onclick="app.closeModal()" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800 transition">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium rounded-lg transition shadow-lg shadow-primary-500/30 flex items-center gap-2">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Save Record
+                        </button>
+                    </div>
+                </form>`;
+
+                app.openModal(`Create New ${this.title.slice(0, -1)}`, formHtml);
+            }
+
+            async submitForm() {
+                const payload = {};
+                this.formSchema.forEach(f => {
+                    payload[f.name] = document.getElementById(`field-${f.name}`).value;
+                });
+
+                try {
+                    const res = await fetch(`${API_BASE}${this.endpoint}`, {
+                        method: 'POST',
+                        body: JSON.stringify(payload),
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    
+                    if (res.ok) {
+                        app.toast(`Successfully created record!`, 'success');
+                        app.closeModal();
+                        this.loadData();
+                    } else throw new Error("API Error");
+                } catch (e) {
+                    app.toast(`Error creating record.`, 'error');
+                }
+            }
+
+            async deleteRecord(id) {
+                if(!confirm("Are you sure you want to delete this record? This action is logged.")) return;
+                
+                try {
+                    const res = await fetch(`${API_BASE}${this.endpoint}/${id}`, { method: 'DELETE' });
+                    if (res.ok) {
+                        app.toast(`Record deleted.`, 'info');
+                        this.loadData();
+                    }
+                } catch(e) {
+                    app.toast(`Error deleting record.`, 'error');
+                }
+            }
+        }
+
+        // Boot
+        window.onload = () => app.init();
+    </script>
+</body>
+</html>
