@@ -27,13 +27,10 @@
         .sidebar-item { transition: all 0.2s; border-left: 3px solid transparent; }
         .sidebar-item:hover { background-color: rgba(255,255,255,0.03); border-left-color: rgba(255,255,255,0.2); }
         .sidebar-item.active { background-color: rgba(59, 130, 246, 0.1); color: #60a5fa; border-left-color: #3b82f6; }
-        
-        /* Modern Scrollbars */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
-        
         .modal-enter { animation: modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes modalFadeIn {
             from { opacity: 0; transform: scale(0.95) translateY(10px); }
@@ -43,7 +40,6 @@
 </head>
 <body class="flex h-screen overflow-hidden text-sm">
 
-    <!-- Sidebar -->
     <aside class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col z-20 shadow-2xl flex-shrink-0">
         <div class="h-16 flex items-center px-6 border-b border-slate-800">
             <div class="w-8 h-8 rounded bg-gradient-to-br from-primary-500 to-indigo-600 flex items-center justify-center text-white font-bold mr-3 shadow-lg shadow-primary-500/30">
@@ -66,7 +62,13 @@
                 <i class="fa-solid fa-store w-6 text-slate-400"></i> Shop Editor
             </a>
             <a href="#" onclick="app.switchTab('ores', 'Game Data / Ore Config')" id="nav-ores" class="sidebar-item flex items-center px-6 py-2.5 text-slate-300">
-                <i class="fa-solid fa-gem w-6 text-slate-400"></i> Ore & Mining
+                <i class="fa-solid fa-gem w-6 text-slate-400"></i> Ore Editor
+            </a>
+            <a href="#" onclick="app.switchTab('pets', 'Game Data / Pet Config')" id="nav-pets" class="sidebar-item flex items-center px-6 py-2.5 text-slate-300">
+                <i class="fa-solid fa-paw w-6 text-slate-400"></i> Pet Editor
+            </a>
+            <a href="#" onclick="app.switchTab('crates', 'Game Data / Loot Crates')" id="nav-crates" class="sidebar-item flex items-center px-6 py-2.5 text-slate-300">
+                <i class="fa-solid fa-box-open w-6 text-slate-400"></i> Crate Editor
             </a>
             
             <div class="px-4 mt-6 mb-2"><p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">System</p></div>
@@ -81,13 +83,11 @@
                 <p class="text-sm font-medium text-white truncate">System Admin</p>
                 <p class="text-xs text-slate-500 truncate">Root Access</p>
             </div>
-            <a href="/api/logout" class="text-slate-400 hover:text-red-400 transition" title="Log Out"><i class="fa-solid fa-power-off"></i></a>
+            <a href="http://fi3.bot-hosting.net:26167/api/logout" class="text-slate-400 hover:text-red-400 transition" title="Log Out"><i class="fa-solid fa-power-off"></i></a>
         </div>
     </aside>
 
-    <!-- Main Workspace -->
     <main class="flex-1 flex flex-col bg-[#0b1120] relative">
-        <!-- Header -->
         <header class="h-16 glass-panel border-b border-slate-800 flex items-center justify-between px-6 z-10">
             <div class="flex items-center text-slate-400 font-medium">
                 <span id="breadcrumb">Platform / Overview</span>
@@ -99,17 +99,15 @@
                     <input type="text" placeholder="Global search..." class="bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-md pl-9 pr-4 py-1.5 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 w-64 transition-all">
                 </div>
                 <div class="h-6 w-px bg-slate-700"></div>
-                <div id="ws-indicator" class="flex items-center gap-2 px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 font-medium text-xs">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span id="ws-text">Live Sync</span>
+                <div id="ws-indicator" class="flex items-center gap-2 px-2.5 py-1 rounded bg-red-500/10 border border-red-500/20 text-red-500 font-medium text-xs">
+                    <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                    <span id="ws-text">Connecting...</span>
                 </div>
             </div>
         </header>
 
-        <!-- Dynamic Viewport -->
         <div class="flex-1 overflow-y-auto p-6" id="app-viewport">
             
-            <!-- Tab: Overview -->
             <div id="tab-overview" class="block space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
                     <div class="bg-slate-850 border border-slate-800 rounded-xl p-5 shadow-sm">
@@ -169,7 +167,7 @@
                 </div>
             </div>
 
-            <!-- Tab: Generic Container for Players, Shop, Ores, Audit -->
+            <!-- Tab Containers -->
             <div id="tab-players" class="hidden h-full flex flex-col"></div>
             <div id="tab-shop" class="hidden h-full flex flex-col"></div>
             <div id="tab-ores" class="hidden h-full flex flex-col"></div>
@@ -180,32 +178,26 @@
         </div>
     </main>
 
-    <!-- Generic Modal Container for Form Builder -->
+    <!-- Modal -->
     <div id="generic-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden modal-enter flex flex-col max-h-[90vh]">
             <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center bg-slate-850/50">
                 <h3 class="font-bold text-lg text-white" id="modal-title">Create Record</h3>
                 <button onclick="app.closeModal()" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-            <div class="p-6 overflow-y-auto" id="modal-body">
-                <!-- Form Builder Injects Here -->
-            </div>
+            <div class="p-6 overflow-y-auto" id="modal-body"></div>
         </div>
     </div>
 
-    <!-- Toast Container -->
+    <!-- Toasts -->
     <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 pointer-events-none"></div>
 
     <script>
-        const isLocalFile = window.location.protocol === 'file:';
-        // Connects to your BotHosting server if opened locally, otherwise uses relative path
-        const API_BASE = isLocalFile ? 'http://fi3.bot-hosting.net:26167/api' : '/api';
-        
-        const host = window.location.host || 'fi3.bot-hosting.net:26167';
-        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const WS_URL = isLocalFile ? 'ws://fi3.bot-hosting.net:26167/api/ws' : `${wsProtocol}//${host}/api/ws`;
+        // CRITICAL FIX: HARDCODE URL TO ALWAYS POINT TO BOTHOSTING.
+        // Even if this HTML file is loaded from Render, it will fetch from your bot's IP.
+        const API_BASE = 'http://fi3.bot-hosting.net:26167/api';
+        const WS_URL = 'ws://fi3.bot-hosting.net:26167/api/ws';
 
-        // --- Core Application Logic ---
         const app = {
             activeTab: 'overview',
             
@@ -213,7 +205,6 @@
                 this.fetchDashboardStats();
                 this.connectWebSocket();
                 
-                // Initialize DataGrids
                 this.grids = {
                     players: new DataGrid('tab-players', 'Players', '/users', [
                         { key: 'id', label: 'Discord ID', type: 'mono' },
@@ -221,7 +212,7 @@
                         { key: 'level', label: 'Level', type: 'badge' },
                         { key: 'prestige', label: 'Prestige', type: 'number' },
                         { key: 'total_mined', label: 'Total Mined', type: 'number' }
-                    ], null, false), // readonly for now
+                    ], null, false),
                     
                     shop: new DataGrid('tab-shop', 'Shop Items', '/shop', [
                         { key: 'emoji', label: 'Icon', type: 'text' },
@@ -232,9 +223,9 @@
                     ], [
                         { name: 'emoji', label: 'Emoji Icon', type: 'text', placeholder: '👷', required: true, width: 'half' },
                         { name: 'name', label: 'Item Name', type: 'text', placeholder: 'Expert Miner', required: true, width: 'half' },
-                        { name: 'desc', label: 'Description', type: 'text', placeholder: 'Provides passive income.', required: true, width: 'full' },
+                        { name: 'description', label: 'Description', type: 'text', placeholder: 'Provides passive income.', required: true, width: 'full' },
                         { name: 'price', label: 'Purchase Price ($)', type: 'number', min: 0, required: true, width: 'half' },
-                        { name: 'income', label: 'Passive Income ($)', type: 'number', min: 0, required: true, width: 'half' }
+                        { name: 'passive_income', label: 'Passive Income ($)', type: 'number', min: 0, required: true, width: 'half' }
                     ]),
                     
                     ores: new DataGrid('tab-ores', 'Mineable Ores', '/ores', [
@@ -253,6 +244,29 @@
                         { name: 'req_area', label: 'Required Area ID', type: 'number', min: 1, required: true, width: 'half' }
                     ]),
 
+                    pets: new DataGrid('tab-pets', 'Pet Companions', '/pets', [
+                        { key: 'emoji', label: 'Icon', type: 'text' },
+                        { key: 'name', label: 'Pet Name', type: 'bold' },
+                        { key: 'rarity', label: 'Rarity', type: 'badge' },
+                        { key: 'luck_bonus', label: 'Luck Boost %', type: 'number' },
+                        { key: 'income_bonus', label: 'Income Boost %', type: 'number' }
+                    ], [
+                        { name: 'emoji', label: 'Emoji', type: 'text', placeholder: '🦊', required: true, width: 'third' },
+                        { name: 'name', label: 'Name', type: 'text', required: true, width: 'twothirds' },
+                        { name: 'rarity', label: 'Rarity (e.g. Legendary)', type: 'text', required: true, width: 'full' },
+                        { name: 'luck_bonus', label: 'Luck Boost (%)', type: 'number', step: '0.1', required: true, width: 'half' },
+                        { name: 'income_bonus', label: 'Income Boost (%)', type: 'number', step: '0.1', required: true, width: 'half' }
+                    ]),
+
+                    crates: new DataGrid('tab-crates', 'Loot Crates', '/crates', [
+                        { key: 'id', label: 'ID', type: 'mono' },
+                        { key: 'emoji', label: 'Icon', type: 'text' },
+                        { key: 'name', label: 'Crate Name', type: 'bold' }
+                    ], [
+                        { name: 'emoji', label: 'Emoji', type: 'text', placeholder: '📦', required: true, width: 'third' },
+                        { name: 'name', label: 'Name', type: 'text', placeholder: 'Common Crate', required: true, width: 'twothirds' }
+                    ]),
+
                     audit: new DataGrid('tab-audit', 'Audit Logs', '/audit', [
                         { key: 'timestamp', label: 'Timestamp', type: 'mono' },
                         { key: 'admin', label: 'Admin', type: 'text' },
@@ -264,28 +278,22 @@
             },
 
             switchTab(tabId, breadcrumbText) {
-                // UI Updates
                 document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
                 document.getElementById(`nav-${tabId}`).classList.add('active');
                 
                 document.querySelectorAll('#app-viewport > div').forEach(el => el.classList.add('hidden', 'flex-col'));
                 const target = document.getElementById(`tab-${tabId}`);
                 target.classList.remove('hidden');
-                if(tabId !== 'overview') target.classList.add('flex'); // Enable flex layout for grids
+                if(tabId !== 'overview') target.classList.add('flex');
                 
                 document.getElementById('breadcrumb').innerText = breadcrumbText;
                 
-                // Load data for the selected grid
                 if (this.grids[tabId]) this.grids[tabId].loadData();
                 if (tabId === 'overview') this.fetchDashboardStats();
             },
 
             toast(msg, type = 'success') {
-                const colors = {
-                    'success': 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
-                    'error': 'bg-red-500/10 border-red-500/20 text-red-400',
-                    'info': 'bg-blue-500/10 border-blue-500/20 text-blue-400'
-                };
+                const colors = { 'success': 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400', 'error': 'bg-red-500/10 border-red-500/20 text-red-400', 'info': 'bg-blue-500/10 border-blue-500/20 text-blue-400' };
                 const icons = { 'success': 'fa-check', 'error': 'fa-triangle-exclamation', 'info': 'fa-info' };
                 
                 const el = document.createElement('div');
@@ -308,9 +316,7 @@
                 document.getElementById('generic-modal').classList.remove('hidden');
             },
 
-            closeModal() {
-                document.getElementById('generic-modal').classList.add('hidden');
-            },
+            closeModal() { document.getElementById('generic-modal').classList.add('hidden'); },
 
             async fetchDashboardStats() {
                 try {
@@ -337,7 +343,6 @@
                 ws.onmessage = (event) => {
                     const msg = JSON.parse(event.data);
                     
-                    // Dashboard Feed
                     if (msg.event === 'mining_event') {
                         const feed = document.getElementById('live-feed');
                         const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
@@ -353,16 +358,16 @@
                         `);
                         if(feed.children.length > 20) feed.removeChild(feed.lastChild);
                         
-                        // Update fast stat
                         const oresEl = document.getElementById('stat-ores');
                         oresEl.innerText = (parseInt(oresEl.innerText.replace(/,/g, '')) + msg.data.ores_mined).toLocaleString();
                     }
                     
-                    // Table auto-reloads on edits
-                    if (['shop_update', 'ore_update'].includes(msg.event)) {
+                    if (['shop_update', 'ore_update', 'pets_update', 'crates_update'].includes(msg.event)) {
                         app.toast(`Remote ${msg.event.split('_')[0]} change detected.`, 'info');
-                        if (msg.event === 'shop_update' && !document.getElementById('tab-shop').classList.contains('hidden')) app.grids.shop.loadData();
-                        if (msg.event === 'ore_update' && !document.getElementById('tab-ores').classList.contains('hidden')) app.grids.ores.loadData();
+                        const gridType = msg.event.split('_')[0];
+                        if (!document.getElementById(`tab-${gridType}`).classList.contains('hidden') && app.grids[gridType]) {
+                            app.grids[gridType].loadData();
+                        }
                     }
                 };
                 
@@ -375,7 +380,6 @@
             }
         };
 
-        // --- Generic DataGrid & FormBuilder Architecture ---
         class DataGrid {
             constructor(containerId, title, endpoint, columns, formSchema = null, canCreate = true) {
                 this.containerId = containerId;
@@ -434,7 +438,7 @@
                     this.data = await res.json();
                     this.renderRows(this.data);
                 } catch (e) {
-                    tbody.innerHTML = `<tr><td colspan="100%" class="px-5 py-8 text-center text-red-400">Failed to fetch data from API.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="100%" class="px-5 py-8 text-center text-red-400">Failed to fetch data from API. Did you get blocked by Mixed Content? Check browser console.</td></tr>`;
                 }
             }
 
@@ -455,11 +459,9 @@
 
                 tbody.innerHTML = dataArray.map(row => {
                     let html = `<tr class="hover:bg-slate-800/50 transition group">`;
-                    
                     this.columns.forEach(col => {
                         let val = row[col.key] || '-';
                         let css = "px-5 py-3 text-sm text-slate-300";
-                        
                         if (col.type === 'currency') val = `<span class="text-emerald-400 font-medium">$${val.toLocaleString()}</span>`;
                         else if (col.type === 'bold') val = `<span class="text-white font-medium">${val}</span>`;
                         else if (col.type === 'mono') val = `<span class="font-mono text-xs text-slate-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-700">${val}</span>`;
@@ -468,16 +470,13 @@
                             const color = colors[String(val).length % colors.length];
                             val = `<span class="px-2 py-0.5 rounded text-xs font-medium border ${color}">${val}</span>`;
                         }
-                        
                         html += `<td class="${css}">${val}</td>`;
                     });
 
                     if (this.canCreate) {
-                        html += `
-                            <td class="px-5 py-3 text-right">
+                        html += `<td class="px-5 py-3 text-right">
                                 <button onclick="app.grids.${this.containerId.replace('tab-','')}.deleteRecord(${row.id})" class="text-slate-500 hover:text-red-400 transition opacity-0 group-hover:opacity-100 p-1.5 rounded bg-slate-800 hover:bg-red-500/10"><i class="fa-solid fa-trash"></i></button>
-                            </td>
-                        `;
+                            </td>`;
                     }
                     return html + `</tr>`;
                 }).join('');
@@ -498,10 +497,8 @@
             openCreateModal() {
                 let formHtml = `<form id="dynamic-form" class="space-y-4" onsubmit="event.preventDefault(); app.grids.${this.containerId.replace('tab-','')}.submitForm()">`;
                 formHtml += `<div class="grid grid-cols-2 gap-4">`;
-                
                 this.formSchema.forEach(field => {
                     const spanClass = field.width === 'full' ? 'col-span-2' : (field.width === 'third' ? 'col-span-2 md:col-span-1 lg:col-span-1' : 'col-span-2 sm:col-span-1');
-                    
                     formHtml += `<div class="${spanClass}">
                         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">${field.label}</label>
                         <input type="${field.type}" id="field-${field.name}" 
@@ -512,58 +509,44 @@
                             ${field.step !== undefined ? `step="${field.step}"` : ''}>
                     </div>`;
                 });
-                
                 formHtml += `</div>
                     <div class="pt-5 border-t border-slate-800 flex justify-end gap-3 mt-6">
                         <button type="button" onclick="app.closeModal()" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800 transition">Cancel</button>
                         <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium rounded-lg transition shadow-lg shadow-primary-500/30 flex items-center gap-2">
                             <i class="fa-solid fa-cloud-arrow-up"></i> Save Record
                         </button>
-                    </div>
-                </form>`;
-
+                    </div></form>`;
                 app.openModal(`Create New ${this.title.slice(0, -1)}`, formHtml);
             }
 
             async submitForm() {
                 const payload = {};
-                this.formSchema.forEach(f => {
-                    payload[f.name] = document.getElementById(`field-${f.name}`).value;
-                });
-
+                this.formSchema.forEach(f => { payload[f.name] = document.getElementById(`field-${f.name}`).value; });
                 try {
                     const res = await fetch(`${API_BASE}${this.endpoint}`, {
-                        method: 'POST',
-                        body: JSON.stringify(payload),
+                        method: 'POST', body: JSON.stringify(payload),
                         headers: { 'Content-Type': 'application/json' }
                     });
-                    
                     if (res.ok) {
                         app.toast(`Successfully created record!`, 'success');
                         app.closeModal();
                         this.loadData();
                     } else throw new Error("API Error");
-                } catch (e) {
-                    app.toast(`Error creating record.`, 'error');
-                }
+                } catch (e) { app.toast(`Error creating record.`, 'error'); }
             }
 
             async deleteRecord(id) {
                 if(!confirm("Are you sure you want to delete this record? This action is logged.")) return;
-                
                 try {
                     const res = await fetch(`${API_BASE}${this.endpoint}/${id}`, { method: 'DELETE' });
                     if (res.ok) {
                         app.toast(`Record deleted.`, 'info');
                         this.loadData();
                     }
-                } catch(e) {
-                    app.toast(`Error deleting record.`, 'error');
-                }
+                } catch(e) { app.toast(`Error deleting record.`, 'error'); }
             }
         }
 
-        // Boot
         window.onload = () => app.init();
     </script>
 </body>
