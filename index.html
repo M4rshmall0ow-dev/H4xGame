@@ -40,6 +40,11 @@
 </head>
 <body class="flex h-screen overflow-hidden text-sm">
 
+    <!-- HTTPS Warning Banner -->
+    <div id="https-warning" class="hidden absolute top-0 left-0 w-full bg-red-600 text-white px-6 py-3 text-center font-medium shadow-md z-50">
+        ⚠️ Mixed Content Blocked! You are accessing this on an HTTPS domain (Render). You MUST use the direct BotHosting URL for the dashboard to work. <a href="http://fi3.bot-hosting.net:26167" class="underline font-bold">Click here to open the correct URL</a>.
+    </div>
+
     <aside class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col z-20 shadow-2xl flex-shrink-0">
         <div class="h-16 flex items-center px-6 border-b border-slate-800">
             <div class="w-8 h-8 rounded bg-gradient-to-br from-primary-500 to-indigo-600 flex items-center justify-center text-white font-bold mr-3 shadow-lg shadow-primary-500/30">
@@ -194,7 +199,6 @@
 
     <script>
         // CRITICAL FIX: HARDCODE URL TO ALWAYS POINT TO BOTHOSTING.
-        // Even if this HTML file is loaded from Render, it will fetch from your bot's IP.
         const API_BASE = 'http://fi3.bot-hosting.net:26167/api';
         const WS_URL = 'ws://fi3.bot-hosting.net:26167/api/ws';
 
@@ -202,9 +206,8 @@
             activeTab: 'overview',
             
             init() {
-                this.fetchDashboardStats();
-                this.connectWebSocket();
-                
+                // BUG FIX: Initialize the grids BEFORE attempting any network calls.
+                // This guarantees the tabs exist in memory even if the API/WebSocket fails to connect!
                 this.grids = {
                     players: new DataGrid('tab-players', 'Players', '/users', [
                         { key: 'id', label: 'Discord ID', type: 'mono' },
@@ -275,6 +278,20 @@
                         { key: 'details', label: 'Details', type: 'text' }
                     ], null, false)
                 };
+
+                // BUG FIX: Wrap network calls in try-catch so they don't crash the script if Render blocks them
+                try {
+                    this.fetchDashboardStats();
+                } catch (e) {
+                    console.error("Fetch stats failed:", e);
+                }
+
+                try {
+                    this.connectWebSocket();
+                } catch (e) {
+                    console.error("WebSocket setup failed:", e);
+                    document.getElementById('ws-text').innerText = "WS Blocked";
+                }
             },
 
             switchTab(tabId, breadcrumbText) {
@@ -319,14 +336,12 @@
             closeModal() { document.getElementById('generic-modal').classList.add('hidden'); },
 
             async fetchDashboardStats() {
-                try {
-                    const res = await fetch(`${API_BASE}/stats`);
-                    const data = await res.json();
-                    document.getElementById('stat-users').innerText = data.total_users.toLocaleString();
-                    document.getElementById('stat-coins').innerText = '$' + data.total_coins.toLocaleString();
-                    document.getElementById('stat-ores').innerText = data.total_ores.toLocaleString();
-                    document.getElementById('stat-areas').innerText = data.active_areas;
-                } catch (e) { console.warn("Failed to load overview stats."); }
+                const res = await fetch(`${API_BASE}/stats`);
+                const data = await res.json();
+                document.getElementById('stat-users').innerText = data.total_users.toLocaleString();
+                document.getElementById('stat-coins').innerText = '$' + data.total_coins.toLocaleString();
+                document.getElementById('stat-ores').innerText = data.total_ores.toLocaleString();
+                document.getElementById('stat-areas').innerText = data.active_areas;
             },
 
             connectWebSocket() {
@@ -371,11 +386,16 @@
                     }
                 };
                 
+                ws.onerror = (error) => {
+                    console.error("WebSocket Error Blocked By Chrome", error);
+                };
+
                 ws.onclose = () => {
                     txt.innerText = "Reconnecting...";
                     ind.className = "flex items-center gap-2 px-2.5 py-1 rounded bg-red-500/10 border border-red-500/20 text-red-500 font-medium text-xs";
                     ind.children[0].classList.remove('animate-pulse');
-                    setTimeout(() => this.connectWebSocket(), 3000);
+                    // Prevent infinite spam loop if Render is permanently blocking it
+                    setTimeout(() => this.connectWebSocket(), 5000);
                 };
             }
         };
@@ -438,7 +458,7 @@
                     this.data = await res.json();
                     this.renderRows(this.data);
                 } catch (e) {
-                    tbody.innerHTML = `<tr><td colspan="100%" class="px-5 py-8 text-center text-red-400">Failed to fetch data from API. Did you get blocked by Mixed Content? Check browser console.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="100%" class="px-5 py-8 text-center text-red-400">API connection blocked by Mixed Content. Please use the direct BotHosting URL.</td></tr>`;
                 }
             }
 
@@ -547,7 +567,13 @@
             }
         }
 
-        window.onload = () => app.init();
+        // Boot
+        window.onload = () => {
+            if (window.location.protocol === 'https:') {
+                document.getElementById('https-warning').classList.remove('hidden');
+            }
+            app.init();
+        };
     </script>
 </body>
 </html>
